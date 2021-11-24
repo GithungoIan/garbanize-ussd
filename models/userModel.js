@@ -1,6 +1,11 @@
 const mongoose = require("mongoose");
 
 const userSchema = new mongoose.Schema({
+  phoneNumber: {
+    type: String,
+    required: [true, "please provide your phone number"],
+    unique: true,
+  },
   name: {
     type: String,
     required: [true, "please provide your name"],
@@ -11,8 +16,8 @@ const userSchema = new mongoose.Schema({
   },
   role: {
     type: String,
-    default: "homeOwner",
-    enum: ["homeOwner", "collector"],
+    default: "land Lord",
+    enum: ["land Lord", "collector"],
   },
   registered: {
     type: Boolean,
