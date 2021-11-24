@@ -9,6 +9,7 @@ exports.start = () => {
     })
     .on("connected", () => {
       log.info("App is connected to Elarian");
+      log.info(`App is ready to process requests via ${process.env.USSD_CODE}`);
     })
     .on("ussdSession", ussdController.handleUssdSession)
     .connect();
