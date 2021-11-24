@@ -1,0 +1,19 @@
+{
+	"activityChannel": {
+        "number": "ussd",
+        "channel": "web"
+    },
+
+	"locations": [
+		"Nairobi",
+		"Kiambu",
+		"Nakuru",
+		"kisumu",
+		"Mombasa"
+	],
+	
+	"roles": [
+		"land Lord",
+		"home Owner"
+	]
+}
