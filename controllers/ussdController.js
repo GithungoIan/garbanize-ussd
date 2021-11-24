@@ -1,4 +1,6 @@
 const log = require("signale");
+const config = require("config");
+const User = require("../models/userModel");
 
 const getNextScreen = (nextScreen, input) => {
   switch (nextScreen) {
@@ -12,9 +14,9 @@ const getNextScreen = (nextScreen, input) => {
 
     case "garbage-collection":
       if (input === "1") {
-        nextScreen = "landlord";
+        nextScreen = "roles";
       } else if (input === "2") {
-        nextScreen = "home-owner";
+        nextScreen = "collectors_ranks";
       }
       break;
 
@@ -31,6 +33,15 @@ const getNextScreen = (nextScreen, input) => {
         nextScreen = "quit";
       }
       break;
+
+    case "crowdfunding":
+      if (input === "1") {
+        nextScreen = "stellar";
+      } else if (input === "2") {
+        nextScreen = "m-pesa";
+      }
+
+      break;
   }
   return nextScreen;
 };
@@ -46,9 +57,10 @@ exports.handleUssdSession = async (
   let { nextScreen = "home" } = appData || {};
 
   log.info(`Processing USSD from ${customer.customerNumber.number}`);
+  log.info(nextScreen);
 
   const customerData = await customer.getMetadata();
-  let { name, address, role, registered = false } = customerData;
+  let { name, address, role, registered = false, collector } = customerData;
 
   console.log(customerData);
   const menu = {
@@ -103,6 +115,7 @@ exports.handleUssdSession = async (
 
     case "register-role":
       address = config.get("locations")[parseInt(input, 10) - 1];
+      registered = true;
       menu.text = `You can also specify your role\n${config
         .get("roles")
         .map((i, idx) => `${idx + 1}. ${i}`)
@@ -128,7 +141,8 @@ exports.handleUssdSession = async (
       };
 
       nextScreen = "home";
-      const text = `H1 ${name}, thank you for joining Garbanize familiy. Dial ${process.env.USSD_CODE} to get started`;
+      const text = `Hi ${name}, thank you for joining Garbanize familiy. Dial ${process.env.USSD_CODE} to get started`;
+
       customer
         .sendMessage(
           {
@@ -142,6 +156,7 @@ exports.handleUssdSession = async (
           }
         )
         .catch(console.error);
+
       break;
 
     // main menu
@@ -152,32 +167,60 @@ exports.handleUssdSession = async (
 
     case "garbage-collection":
       menu.text =
-        "Okay! Are you a landlord or a homeowner?\n1.landlord \n2. homeOwner\n3. back";
-      nextScreen = "roles";
-      callback(menu, {
-        screen: nextScreen2,
-      });
+        "Okay! Are you a landlord or a homeowner?\n1.landlord \n2. top Collectors\n3. back";
       break;
 
     case "roles":
       menu.text =
         "Greetings Landlord! Please select services needed?\n1.Call Collectors \n2.Send SMS reminder\n3.back";
-      nextScreen = "roles";
-      callback(menu, {
-        screen: nextScreen,
-      });
+      nextScreen = "home";
+      menu.isTerminal = true;
       break;
 
     case "landlord_view":
       break;
 
     case "collectors_ranks":
+      menu.text = `Here are top rated collectors available in your area\n${config
+        .get("collectors")
+        .map((i, idx) => `${idx + 1}. ${i}`)
+        .join("\n")}`;
+      nextScreen = "home";
+      menu.isTerminal = true;
       break;
 
     case "crowdfunding":
+      menu.text = "Fund a community activity\n1. Stellar wallet\n2. Mpesa";
+      break;
+
+    case "stellar":
+      menu.text = "not available at the moment";
+      nextScreen = "home";
+      menu.isTerminal = true;
+      break;
+
+    case "mpesa":
+      menu.text = "not available at the moment";
+      nextScreen = "home";
+      menu.isTerminal = true;
       break;
 
     case "view-collectors":
+      menu.text = `Here are collectors available in your area\n${config
+        .get("collectors")
+        .map((i, idx) => `${idx + 1}. ${i}`)
+        .join("\n")}`;
+      nextScreen = "collectors";
+      break;
+
+    case "collectors":
+      collector = config.get("collectors")[parseInt(input, 10) - 1];
+      menu.text = `Here is the contact of the collecor you have selected\n${config
+        .get(`contacts.${collector}`)
+        .map((i, idx) => `${idx + 1}. ${i}`)
+        .join("\n")}`;
+      menu.isTerminal = true;
+      nextScreen = "home";
       break;
 
     case "quit":
@@ -195,9 +238,13 @@ exports.handleUssdSession = async (
     name,
     address,
     registered,
+    collector,
   });
+
   callback(menu, { ...appData, nextScreen });
   customer
     .updateActivity(config.get("activityChannel"), activity)
     .catch(console.error);
+
+  // console.log(newUser);
 };
